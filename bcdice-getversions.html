@@ -115,12 +115,16 @@
 
 		function getA (href, type = null, content = null) {
 			var a = document.createElement('a');
+			a.innerHTML = content ? content : href;
 			switch(type) {
 				case 'api':
+					href = extractVersionNumber(href);
 					a.href = 'https://github.com/ysakasin/bcdice-api/releases/tag/' + href;
 					a.classList.add('api-' + href.replace(/\./g, '-'));
 					break;
 				case 'bcdice':
+					href = extractVersionNumber(href);
+					href = href.match(/^v/) ? href : 'v' + href
 					a.href = 'https://github.com/bcdice/BCDice/releases/tag/' + href;
 					a.classList.add('bcdice-' + href.replace(/\./g, '-'));
 					break;
@@ -137,7 +141,6 @@
 					a.href = href;
 					break;
 			}
-			a.innerHTML = content ? content : href;
 			return a;
 		}
 
@@ -201,8 +204,8 @@
 					var data = this.response;
 					name.innerHTML = '';
 					name.appendChild(getA(base_url, 'clipboard'));
-					api.appendChild(getA(extractVersionNumber(data['api']), 'api'));
-					lib.appendChild(getA('v' + extractVersionNumber(data['bcdice']), 'bcdice'));
+					api.appendChild(getA(data['api'], 'api'));
+					lib.appendChild(getA(data['bcdice'], 'bcdice'));
 					getAdminInformations(base_url, [admin_name, admin_info]);
 
 					const endTime = performance.now();
