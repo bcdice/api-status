@@ -163,18 +163,18 @@
 				tdLibVersion.classList.add('lib-version');
 				var tdResponseTime = document.createElement('td');
 				tdResponseTime.classList.add('response-time');
-				var tdAdminName = document.createElement('td');
-				tdAdminName.classList.add('admin-name');
 				var tdAdminInfo = document.createElement('td');
 				tdAdminInfo.classList.add('admin-info');
+				var tdAdminName = document.createElement('td');
+				tdAdminName.classList.add('admin-name');
 
 				var tr = document.createElement('tr');
 				tr.appendChild(tdServerName);
 				tr.appendChild(tdApiVersion);
 				tr.appendChild(tdLibVersion);
 				tr.appendChild(tdResponseTime);
-				tr.appendChild(tdAdminName);
 				tr.appendChild(tdAdminInfo);
+				tr.appendChild(tdAdminName);
 
 				var table = document.getElementById('versions');
 				table.appendChild(tr);
@@ -188,8 +188,8 @@
 				var api = server.getElementsByClassName('api-version')[0];
 				var lib = server.getElementsByClassName('lib-version')[0];
 				var time = server.getElementsByClassName('response-time')[0];
-				var admin_name = server.getElementsByClassName('admin-name')[0];
 				var admin_info = server.getElementsByClassName('admin-info')[0];
+				var admin_name = server.getElementsByClassName('admin-name')[0];
 				var base_url = name.innerHTML;
 
 				var request = new XMLHttpRequest();
