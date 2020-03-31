@@ -72,9 +72,8 @@
 		];
 
 		window.onload = function () {
-
 			// JS 非対応コメントを削除
-			stat.innerHTML = 'サーバリストをダウンロード中';
+			stat.textContent = 'GitHub より最新リリース情報をダウンロード中';
 
 			// JS 動的変更用 CSS タグを作成
 			var newCss = document.createElement('style');
@@ -88,17 +87,18 @@
 			});
 
 			// サーバリストをダウンロード
+			stat.textContent = 'サーバリストをダウンロード中';
 			var request = new XMLHttpRequest();
 			request.open('GET', 'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml');
 			request.responseType = 'text';
 			request.timeout = 1000;
 
 			request.onload = function () {
-				stat.innerHTML = 'サーバリストをもとに稼働中のバージョンを取得中';
+				stat.textContent = 'サーバリストをもとに稼働中のバージョンを取得中';
 				mainProcess(jsyaml.load(this.response));
 			};
 			request.onerror = function () {
-				stat.innerHTML = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
+				stat.textContent = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
 				mainProcess(staticServerList);
 			}
 			request.ontimeout = request.onerror;
@@ -110,7 +110,7 @@
 			// 各サーバの API を叩いてデータを取得・表示
 			outputList(serverList);
 			getVersions();
-			stat.innerHTML = '完了';
+			stat.textContent = '完了';
 		}
 
 		function getA (href, type = null, content = null) {
