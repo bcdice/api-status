@@ -44,6 +44,12 @@
 				<th class="response-time">応答時間</th>
 				<th class="admin" colspan="2">管理者情報</th>
 			</tr>
+			<tr id="latest-release">
+				<td class="server-name">最新のリリース</td>
+				<td class="api-version target"></td>
+				<td class="lib-version target"></td>
+				<td class="dummy" colspan="3"></td>
+			</tr>
 		</thead>
 		<tbody id="versions">
 		</tbody>
@@ -69,6 +75,17 @@
 
 			// JS 非対応コメントを削除
 			stat.innerHTML = 'サーバリストをダウンロード中';
+
+			// JS 動的変更用 CSS タグを作成
+			var newCss = document.createElement('style');
+			newCss.type = "text/css";
+			document.getElementsByTagName('head').item(0).appendChild(newCss);
+
+			// GitHub より、最新リリースを取得する
+			var latest_table = document.getElementById('latest-release');
+			Array.prototype.forEach.call(latest_table.getElementsByClassName('target'), function(target) {
+				getLatestRelease(target);
+			});
 
 			// サーバリストをダウンロード
 			var request = new XMLHttpRequest();
@@ -101,15 +118,17 @@
 			switch(type) {
 				case 'api':
 					a.href = 'https://github.com/ysakasin/bcdice-api/releases/tag/' + href;
+					a.classList.add('api-' + href.replace(/\./g, '-'));
 					break;
 				case 'bcdice':
-					a.href = 'https://github.com/bcdice/BCDice/releases/tag/v' + href;
+					a.href = 'https://github.com/bcdice/BCDice/releases/tag/' + href;
+					a.classList.add('bcdice-' + href.replace(/\./g, '-'));
 					break;
 				case 'clipboard':
 					a.href = 'javascript:onclick=toClipBoard("' + href + '");';
 					break;
 				case 'admin-url':
-					a.href = href;
+					a.href = (href.match(/^http/) ? '' : 'http://') + href;
 					break;
 				case 'admin-email':
 					a.href = 'mailto:' + href;
@@ -182,8 +201,8 @@
 					var data = this.response;
 					name.innerHTML = '';
 					name.appendChild(getA(base_url, 'clipboard'));
-					api.appendChild(getA(extractVersionNumber(data['api']), 'api', data['api']));
-					lib.appendChild(getA(extractVersionNumber(data['bcdice']), 'bcdice', data['bcdice']));
+					api.appendChild(getA(extractVersionNumber(data['api']), 'api'));
+					lib.appendChild(getA('v' + extractVersionNumber(data['bcdice']), 'bcdice'));
 					getAdminInformations(base_url, [admin_name, admin_info]);
 
 					const endTime = performance.now();
@@ -212,7 +231,7 @@
 			var request = new XMLHttpRequest();
 			request.open('GET', base_url + '/v1/admin');
 			request.responseType = 'json';
-			request.timeout = 5000;
+			request.timeout = 10000;
 
 			request.onload = function() {
 				var data = this.response;
@@ -240,9 +259,53 @@
 				}
 			};
 			request.onerror = function() {
+				admin_elements[0].textContent = 'Error';
+				admin_elements[1].textContent = 'Error';
 			};
 			request.ontimeout = function() {
+				admin_elements[0].textContent = 'Timeout';
+				admin_elements[1].textContent = 'Timeout';
 			};
+			request.send();
+		};
+
+		function getLatestRelease(target_element) {
+			var url = '';
+			var type = '';
+			switch(target_element.classList[0]) {
+				case 'api-version':
+					url = 'ysakasin/bcdice-api';
+					type = 'api';
+					break;
+				case 'lib-version':
+					url = 'bcdice/BCDice';
+					type = 'bcdice';
+					break;
+				default:
+					return;
+					break;
+			}
+			url = 'https://api.github.com/repos/' + url + '/releases/latest';
+
+			var request = new XMLHttpRequest();
+			request.open('GET', url)
+			request.responseType = 'json';
+			request.timeout = 5000;
+
+			request.onload = function() {
+				var data = this.response;
+				target_element.appendChild(getA(data['tag_name'], type));
+
+				var css = document.styleSheets.item(1);
+				css.insertRule('.' + type + '-' + data['tag_name'].replace(/\./g, '-') + ' { font-weight: bold; }', document.styleSheets[1].cssRules.length);
+			}
+			request.onerror = function() {
+				target_element.textContent = 'Error';
+			};
+			request.ontimeout = function() {
+				target_element.textContent = 'Timeout';
+			};
+
 			request.send();
 		};
 
