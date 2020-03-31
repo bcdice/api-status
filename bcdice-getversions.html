@@ -1,0 +1,255 @@
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>BCDice-API バージョン一覧</title>
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
+<style>
+#main-table th, td {
+	padding-right: 1em;
+}
+.api-version, .lib-version {
+	text-align: left;
+	width: 100px;
+}
+.response-time {
+	text-align: right;
+}
+#status-title {
+	font-weight: bold;
+}
+#status {
+	color: red;
+	font-size: 2em;
+}
+td.admin-info > * {
+	margin: auto 0.5em;
+}
+</style>
+</head>
+<body>
+	<h1>BCDice-API バージョン一覧</h1>
+
+	<p>
+		<span id="status-title">状態: </span>
+		<span id="status">JavaScript が無効になっているか、サポートされていないブラウザです。</span>
+	</p>
+
+	<table id="main-table">
+		<thead>
+			<tr>
+				<th class="server-name">サーバ名(エンドポイント)</th>
+				<th class="api-version">API</th>
+				<th class="lib-version">BCDice</th>
+				<th class="response-time">応答時間</th>
+				<th class="admin" colspan="2">管理者情報</th>
+			</tr>
+		</thead>
+		<tbody id="versions">
+		</tbody>
+	</table>
+	<p>
+	使いたい「サーバ名」をクリックすると、API のエンドポイントをクリップボードに格納(コピー)します。
+	</p>
+
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.7.0/js-yaml.min.js"></script>
+	<script type="text/javascript">
+		const stat = document.getElementById('status');
+
+		const staticServerList = [
+			'https://bcdice.kazagakure.net',
+			'https://bcdice.herokuapp.com',
+			'https://www.taruki.com/bcdice-api',
+			'https://bcdice-api.conos.jp',
+			'https://bcdice.onlinesession.app',
+			'https://bcdice.trpg.net',
+		];
+
+		window.onload = function () {
+
+			// JS 非対応コメントを削除
+			stat.innerHTML = 'サーバリストをダウンロード中';
+
+			// サーバリストをダウンロード
+			var request = new XMLHttpRequest();
+			request.open('GET', 'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml');
+			request.responseType = 'text';
+			request.timeout = 1000;
+
+			request.onload = function () {
+				stat.innerHTML = 'サーバリストをもとに稼働中のバージョンを取得中';
+				mainProcess(jsyaml.load(this.response));
+			};
+			request.onerror = function () {
+				stat.innerHTML = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
+				mainProcess(staticServerList);
+			}
+			request.ontimeout = request.onerror;
+
+			request.send();
+		}
+
+		function mainProcess(serverList) {
+			// 各サーバの API を叩いてデータを取得・表示
+			outputList(serverList);
+			getVersions();
+			stat.innerHTML = '完了';
+		}
+
+		function getA (href, type = null, content = null) {
+			var a = document.createElement('a');
+			switch(type) {
+				case 'api':
+					a.href = 'https://github.com/ysakasin/bcdice-api/releases/tag/' + href;
+					break;
+				case 'bcdice':
+					a.href = 'https://github.com/bcdice/BCDice/releases/tag/v' + href;
+					break;
+				case 'clipboard':
+					a.href = 'javascript:onclick=toClipBoard("' + href + '");';
+					break;
+				case 'admin-url':
+					a.href = href;
+					break;
+				case 'admin-email':
+					a.href = 'mailto:' + href;
+					break;
+				default:
+					a.href = href;
+					break;
+			}
+			a.innerHTML = content ? content : href;
+			return a;
+		}
+
+		function toClipBoard(text) {
+			var input = document.createElement('textarea');
+			input.textContent = text;
+			var body = document.getElementsByTagName('body')[0];
+			body.appendChild(input);
+			input.select();
+			document.execCommand('copy');
+			body.removeChild(input);
+			alert("Copied!");
+		}
+
+		function outputList(servers) {
+			for (const server of servers) {
+				var tdServerName = document.createElement('td');
+				tdServerName.classList.add('server-name');
+				tdServerName.textContent = server;
+				var tdApiVersion = document.createElement('td');
+				tdApiVersion.classList.add('api-version');
+				var tdLibVersion = document.createElement('td');
+				tdLibVersion.classList.add('lib-version');
+				var tdResponseTime = document.createElement('td');
+				tdResponseTime.classList.add('response-time');
+				var tdAdminName = document.createElement('td');
+				tdAdminName.classList.add('admin-name');
+				var tdAdminInfo = document.createElement('td');
+				tdAdminInfo.classList.add('admin-info');
+
+				var tr = document.createElement('tr');
+				tr.appendChild(tdServerName);
+				tr.appendChild(tdApiVersion);
+				tr.appendChild(tdLibVersion);
+				tr.appendChild(tdResponseTime);
+				tr.appendChild(tdAdminName);
+				tr.appendChild(tdAdminInfo);
+
+				var table = document.getElementById('versions');
+				table.appendChild(tr);
+			}
+		}
+
+		function getVersions() {
+			var table = document.getElementById('versions');
+			Array.prototype.forEach.call(table.getElementsByTagName('tr'), function(server) {
+				var name = server.getElementsByClassName('server-name')[0];
+				var api = server.getElementsByClassName('api-version')[0];
+				var lib = server.getElementsByClassName('lib-version')[0];
+				var time = server.getElementsByClassName('response-time')[0];
+				var admin_name = server.getElementsByClassName('admin-name')[0];
+				var admin_info = server.getElementsByClassName('admin-info')[0];
+				var base_url = name.innerHTML;
+
+				var request = new XMLHttpRequest();
+				request.open('GET', base_url + '/v1/version');
+				request.responseType = 'json';
+				request.timeout = 5000;
+
+				request.onload = function () {
+					var data = this.response;
+					name.innerHTML = '';
+					name.appendChild(getA(base_url, 'clipboard'));
+					api.appendChild(getA(extractVersionNumber(data['api']), 'api', data['api']));
+					lib.appendChild(getA(extractVersionNumber(data['bcdice']), 'bcdice', data['bcdice']));
+					getAdminInformations(base_url, [admin_name, admin_info]);
+
+					const endTime = performance.now();
+					time.innerHTML = (endTime - startTime) + 'ms';
+				};
+				request.onerror = function () {
+					api.innerHTML = 'Error';
+					lib.innerHTML = 'Error';
+				};
+				request.ontimeout = function () {
+					api.innerHTML = 'Timeout';
+					lib.innerHTML = 'Timeout';
+				}
+
+				const startTime = performance.now();
+				request.send();
+			});
+		};
+
+		function extractVersionNumber(original) {
+			var matching = original.match(/^(\d+)\.(\d+)\.(\d+)/);
+			return matching[1] + '.' + matching[2] + '.' + matching[3];
+		};
+
+		function getAdminInformations(base_url, admin_elements) {
+			var request = new XMLHttpRequest();
+			request.open('GET', base_url + '/v1/admin');
+			request.responseType = 'json';
+			request.timeout = 5000;
+
+			request.onload = function() {
+				var data = this.response;
+
+				//if(this.status == 404) {
+				//	admin_elements[0].textContent = '管理者情報非対応の API バージョンです';
+				//	return;
+				//}
+
+				if(data['name'] != null) {
+					var name = document.createElement('span');
+					name.textContent = data['name'];
+					admin_elements[0].appendChild(name);
+				}
+
+				if(data['url'] != null){
+					var icon = createFontAwesomeIcon('fa-file');
+					var a = getA(data['url'], 'admin-url', icon.outerHTML);
+					admin_elements[1].appendChild(a);
+				}
+
+				if(data['email'] != null) {
+					var mail = createFontAwesomeIcon('fa-envelope');
+					admin_elements[1].appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
+				}
+			};
+			request.onerror = function() {
+			};
+			request.ontimeout = function() {
+			};
+			request.send();
+		};
+
+		function createFontAwesomeIcon(style, prefix = 'far ') {
+			var icon = document.createElement('i');
+			icon.className = prefix + style;
+			return icon;
+		};
+	</script>
+</body>
+</html>
