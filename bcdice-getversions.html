@@ -250,6 +250,7 @@
 				if(data['url'] != null){
 					var icon = createFontAwesomeIcon('fa-file');
 					var a = getA(data['url'], 'admin-url', icon.outerHTML);
+					a.target = '_blank';
 					admin_elements[1].appendChild(a);
 				}
 
