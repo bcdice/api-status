@@ -226,7 +226,7 @@
 		};
 
 		function extractVersionNumber(original) {
-			var matching = original.match(/^(\d+)\.(\d+)\.(\d+)/);
+			var matching = original.match(/^v?(\d+)\.(\d+)\.(\d+)/);
 			return matching[1] + '.' + matching[2] + '.' + matching[3];
 		};
 
@@ -298,7 +298,7 @@
 
 			request.onload = function() {
 				var data = this.response;
-				target_element.appendChild(getA(data['tag_name'], type));
+				target_element.appendChild(getA(data['tag_name'], type, extractVersionNumber(data['tag_name'])));
 
 				var css = document.styleSheets.item(1);
 				css.insertRule('.' + type + '-' + data['tag_name'].replace(/\./g, '-') + ' { font-weight: bold; }', document.styleSheets[1].cssRules.length);
