@@ -1,0 +1,22 @@
+@charset "utf-8";
+
+#main-table th, td {
+	padding-right: 1em;
+}
+.api-version, .lib-version {
+	text-align: left;
+	width: 100px;
+}
+.response-time {
+	text-align: right;
+}
+#status-title {
+	font-weight: bold;
+}
+#status {
+	color: red;
+	font-size: 2em;
+}
+td.admin-info > * {
+	margin: auto 0.5em;
+}
