@@ -200,11 +200,6 @@ function getAdminInformations(base_url, admin_elements) {
 	request.timeout = 10000;
 
 	request.onload = function() {
-		if(this.status != 200) {
-			this.onerror();
-			return;
-		}
-
 		var data = this.response;
 
 		if(data['name'] != null) {
