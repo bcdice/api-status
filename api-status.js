@@ -200,6 +200,11 @@ function getAdminInformations(base_url, admin_elements) {
 	request.timeout = 10000;
 
 	request.onload = function() {
+		if(this.status != 200) {
+			this.onerror();
+			return;
+		}
+
 		var data = this.response;
 
 		if(data['name'] != null) {
@@ -253,6 +258,11 @@ function getLatestRelease(target_element) {
 	request.timeout = 5000;
 
 	request.onload = function() {
+		if(this.status != 200) {
+			this.onerror();
+			return;
+		}
+
 		var data = this.response;
 		target_element.appendChild(getA(data['tag_name'], type, extractVersionNumber(data['tag_name'])));
 
