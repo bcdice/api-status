@@ -113,18 +113,21 @@ function outputList(servers) {
 		tdLibVersion.classList.add('lib-version');
 		var tdResponseTime = document.createElement('td');
 		tdResponseTime.classList.add('response-time');
-		var tdAdminInfo = document.createElement('td');
-		tdAdminInfo.classList.add('admin-info');
 		var tdAdminName = document.createElement('td');
 		tdAdminName.classList.add('admin-name');
+		var tdAdminURL = document.createElement('td');
+		tdAdminURL.classList.add('admin-url');
+		var tdAdminEmail = document.createElement('td');
+		tdAdminEmail.classList.add('admin-email');
 
 		var tr = document.createElement('tr');
 		tr.appendChild(tdServerName);
 		tr.appendChild(tdApiVersion);
 		tr.appendChild(tdLibVersion);
 		tr.appendChild(tdResponseTime);
-		tr.appendChild(tdAdminInfo);
 		tr.appendChild(tdAdminName);
+		tr.appendChild(tdAdminURL);
+		tr.appendChild(tdAdminEmail);
 
 		var table = document.getElementById('versions');
 		table.appendChild(tr);
@@ -134,12 +137,13 @@ function outputList(servers) {
 function getVersions() {
 	var table = document.getElementById('versions');
 	Array.prototype.forEach.call(table.getElementsByTagName('tr'), function(server) {
-		var name = server.getElementsByClassName('server-name')[0];
-		var api = server.getElementsByClassName('api-version')[0];
-		var lib = server.getElementsByClassName('lib-version')[0];
-		var time = server.getElementsByClassName('response-time')[0];
-		var admin_info = server.getElementsByClassName('admin-info')[0];
-		var admin_name = server.getElementsByClassName('admin-name')[0];
+		var name = server.querySelector('.server-name');
+		var api = server.querySelector('.api-version');
+		var lib = server.querySelector('.lib-version');
+		var time = server.querySelector('.response-time');
+		var admin_name = server.querySelector('.admin-name');
+		var admin_url = server.querySelector('.admin-url');
+		var admin_email = server.querySelector('.admin-email');
 		var base_url = name.innerHTML;
 
 		var request = new XMLHttpRequest();
@@ -158,7 +162,14 @@ function getVersions() {
 			name.appendChild(getA(base_url, 'clipboard'));
 			api.appendChild(getA(data['api'], 'api'));
 			lib.appendChild(getA(data['bcdice'], 'bcdice'));
-			getAdminInformations(base_url, [admin_name, admin_info]);
+			getAdminInformations(
+				base_url,
+				{
+					name: admin_name,
+					url: admin_url,
+					email: admin_email
+				}
+			);
 
 			const endTime = performance.now();
 			time.innerHTML = (endTime - startTime) + 'ms';
@@ -191,36 +202,29 @@ function getAdminInformations(base_url, admin_elements) {
 	request.onload = function() {
 		var data = this.response;
 
-		//if(this.status == 404) {
-		//	admin_elements[0].textContent = '管理者情報非対応の API バージョンです';
-		//	return;
-		//}
-
 		if(data['name'] != null) {
 			var name = document.createElement('span');
 			name.textContent = data['name'];
-			admin_elements[0].appendChild(name);
+			admin_elements.name.appendChild(name);
 		}
 
 		if(data['url'] != null){
 			var icon = createFontAwesomeIcon('fa-file');
 			var a = getA(data['url'], 'admin-url', icon.outerHTML);
 			a.target = '_blank';
-			admin_elements[1].appendChild(a);
+			admin_elements.url.appendChild(a);
 		}
 
 		if(data['email'] != null) {
 			var mail = createFontAwesomeIcon('fa-envelope');
-			admin_elements[1].appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
+			admin_elements.email.appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
 		}
 	};
 	request.onerror = function() {
-		admin_elements[0].textContent = 'Error';
-		admin_elements[1].textContent = 'Error';
+		admin_elements.name.textContent = 'Error';
 	};
 	request.ontimeout = function() {
-		admin_elements[0].textContent = 'Timeout';
-		admin_elements[1].textContent = 'Timeout';
+		admin_elements.name.textContent = 'Timeout';
 	};
 	request.send();
 };

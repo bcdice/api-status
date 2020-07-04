@@ -13,7 +13,7 @@
 </head>
 
 <body>
-	<header>
+	<article class="container">
 		<h1>BCDice-API バージョン一覧</h1>
 
 		<p>
@@ -25,36 +25,41 @@
 		<p id="header">
 			サーバの一覧は<a href="https://github.com/bcdice/bcdice-api-servers">BCDice-API の公開サーバー一覧</a>から取得しています。<br>
 		</p>
-	</header>
 
-	<p>
-		<span id="status-title">状態: </span>
-		<span id="status">JavaScript が無効になっているか、サポートされていないブラウザです。</span>
-	</p>
+		<p>
+			<span id="status-title">状態: </span>
+			<span id="status">JavaScript が無効になっているか、サポートされていないブラウザです。</span>
+		</p>
 
-	<table id="main-table">
-		<thead>
-			<tr>
-				<th class="server-name">サーバ名(エンドポイント)</th>
-				<th class="api-version">API</th>
-				<th class="lib-version">BCDice</th>
-				<th class="response-time">応答時間</th>
-				<th class="admin" colspan="2">管理者情報</th>
-			</tr>
-			<tr id="latest-release">
-				<td class="server-name">最新のリリース</td>
-				<td class="api-version target"></td>
-				<td class="lib-version target"></td>
-				<td class="dummy" colspan="3"></td>
-			</tr>
-		</thead>
-		<tbody id="versions">
-		</tbody>
-	</table>
+		<table class="main-table" id="main-table">
+			<thead>
+				<tr>
+					<th class="server-name">サーバ名(エンドポイント)</th>
+					<th class="api-version">API</th>
+					<th class="lib-version">BCDice</th>
+					<th class="response-time">応答時間</th>
+					<th class="admin" colspan="3">管理者情報</th>
+				</tr>
+				<tr id="latest-release">
+					<td class="server-name">最新のリリース</td>
+					<td class="api-version target"></td>
+					<td class="lib-version target"></td>
+					<td class="none">-</td>
+					<td class="none" colspan="3">-</td>
+				</tr>
+			</thead>
+			<tbody id="versions">
+			</tbody>
+		</table>
 
-	<footer>
-		<p>&copy; 2020 BCDice Project</p>
-	</footer>
+		<p>
+			使いたい「サーバ名」をクリックすると、API のエンドポイントをクリップボードに格納(コピー)します。
+		</p>
+
+		<footer>
+			<p>&copy; 2020 BCDice Project</p>
+		</footer>
+	</article>
 
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.7.0/js-yaml.min.js"></script>
 	<script type="text/javascript" src="api-status.js"></script>
