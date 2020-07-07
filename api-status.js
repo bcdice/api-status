@@ -284,9 +284,11 @@ function getLatestRelease() {
 			target_element.classList.add('latest-version');
 		}
 		request.onerror = function() {
+			latestVersions[type] = 'Error';
 			target_element.textContent = 'Error';
 		};
 		request.ontimeout = function() {
+			latestVersions[type] = 'Timeout';
 			target_element.textContent = 'Timeout';
 		};
 
