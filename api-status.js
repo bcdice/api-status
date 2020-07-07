@@ -172,7 +172,7 @@ function getVersions() {
 			);
 
 			const endTime = performance.now();
-			time.innerHTML = (endTime - startTime) + 'ms';
+			time.innerHTML = Math.round(endTime - startTime) + 'ms';
 		};
 		request.onerror = function () {
 			api.innerHTML = 'Error';
