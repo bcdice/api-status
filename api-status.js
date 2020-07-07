@@ -35,11 +35,17 @@ window.onload = function () {
 	request.timeout = 1000;
 
 	request.onload = function () {
+		if(this.status != 200) {
+			this.onerror();
+			return;
+		}
 		stat.textContent = 'サーバリストをもとに稼働中のバージョンを取得中';
 		mainProcess(jsyaml.load(this.response));
 	};
 	request.onerror = function () {
 		stat.textContent = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
+		header = document.getElementById('header');
+		header.textContent = '';
 		mainProcess(staticServerList);
 	}
 	request.ontimeout = request.onerror;
@@ -146,6 +152,11 @@ function getVersions() {
 		request.timeout = 5000;
 
 		request.onload = function () {
+			if(this.status != 200) {
+				this.onerror();
+				return;
+			}
+
 			var data = this.response;
 			name.innerHTML = '';
 			name.appendChild(getA(base_url, 'clipboard'));
@@ -242,6 +253,11 @@ function getLatestRelease(target_element) {
 	request.timeout = 5000;
 
 	request.onload = function() {
+		if(this.status != 200) {
+			this.onerror();
+			return;
+		}
+
 		var data = this.response;
 		target_element.appendChild(getA(data['tag_name'], type, extractVersionNumber(data['tag_name'])));
 

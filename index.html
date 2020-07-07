@@ -1,14 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
 	<meta charset="UTF-8">
+	<meta property="og:title" content="BCDice-API バージョン一覧">
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="https://api-status.bcdice.org">
+
 	<title>BCDice-API バージョン一覧</title>
 	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
 	<link rel="stylesheet" href="styles.css">
+	<link rel="icon" type="image/png" href="https://bcdice.org/image/bcdice-logo.png">
 </head>
+
 <body>
 	<article class="container">
 		<h1>BCDice-API バージョン一覧</h1>
+
+		<p>
+			BCDice-API が動作しているサーバから、WebAPI (BCDice-API) と ダイスボット (BCDice 本体) のバージョンを取得します。
+		</p>
+		<p>
+			使いたい「サーバ名」をクリックすると、API のエンドポイントをクリップボードに格納(コピー)します。
+		</p>
+		<p id="header">
+			サーバの一覧は<a href="https://github.com/bcdice/bcdice-api-servers">BCDice-API の公開サーバー一覧</a>から取得しています。<br>
+		</p>
 
 		<p>
 			<span id="status-title">状態: </span>
@@ -35,9 +51,14 @@
 			<tbody id="versions">
 			</tbody>
 		</table>
+
 		<p>
 			使いたい「サーバ名」をクリックすると、API のエンドポイントをクリップボードに格納(コピー)します。
 		</p>
+
+		<footer>
+			<p>&copy; 2020 BCDice Project</p>
+		</footer>
 	</article>
 
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.7.0/js-yaml.min.js"></script>
