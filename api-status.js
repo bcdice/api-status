@@ -11,22 +11,27 @@ const staticServerList = [
 	'https://bcdice.trpg.net',
 ];
 
+var latestVersions = {
+	'api': '',
+	'bcdice': ''
+}
+
 // ページが読み込まれたときに実行する
 window.onload = function () {
 	// JS 非対応コメントを削除
-	stat.textContent = 'GitHub より最新リリース情報をダウンロード中';
+	stat.textContent = '';
 
-	// JS 動的変更用 CSS タグを作成
-	var newCss = document.createElement('style');
-	newCss.type = "text/css";
-	document.getElementsByTagName('head').item(0).appendChild(newCss);
+	getLatestRelease();
 
-	// GitHub より、最新リリースを取得する
-	var latest_table = document.getElementById('latest-release');
-	Array.prototype.forEach.call(latest_table.getElementsByClassName('target'), function(target) {
-		getLatestRelease(target);
-	});
+	var timer = setInterval(function() {
+		if(latestVersions['api'] != '' && latestVersions['bcdice'] != '') {
+			clearInterval(timer);
+			getServerList();
+		}
+	}, 10);
+}
 
+function getServerList() {
 	// サーバリストをダウンロード
 	stat.textContent = 'サーバリストをダウンロード中';
 	var request = new XMLHttpRequest();
@@ -40,40 +45,43 @@ window.onload = function () {
 			return;
 		}
 		stat.textContent = 'サーバリストをもとに稼働中のバージョンを取得中';
-		mainProcess(jsyaml.load(this.response));
+		getStatuses(jsyaml.load(this.response));
 	};
 	request.onerror = function () {
 		stat.textContent = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
 		header = document.getElementById('header');
 		header.textContent = '';
-		mainProcess(staticServerList);
+		getStatuses(staticServerList);
 	}
 	request.ontimeout = request.onerror;
 
 	request.send();
 }
 
-function mainProcess(serverList) {
+function getStatuses(serverList) {
 	// 各サーバの API を叩いてデータを取得・表示
 	outputList(serverList);
 	getVersions();
 	stat.textContent = '完了';
 }
 
-function getA (href, type = null, content = null) {
+function getA(href, type = null, content = null) {
 	var a = document.createElement('a');
 	a.innerHTML = content ? content : href;
 	switch(type) {
 		case 'api':
 			href = extractVersionNumber(href);
-			a.href = 'https://github.com/ysakasin/bcdice-api/releases/tag/' + href;
-			a.classList.add('api-' + href.replace(/\./g, '-'));
+			a.href = 'https://github.com/bcdice/bcdice-api/releases/tag/' + href;
+			if(latestVersions['api'] == href) {
+				a.classList.add('latest-version');
+			}
 			break;
 		case 'bcdice':
 			href = extractVersionNumber(href);
-			href = href.match(/^v/) ? href : 'v' + href
-			a.href = 'https://github.com/bcdice/BCDice/releases/tag/' + href;
-			a.classList.add('bcdice-' + href.replace(/\./g, '-'));
+			a.href = 'https://github.com/bcdice/BCDice/releases/tag/v' + href;
+			if(latestVersions['bcdice'] == href) {
+				a.classList.add('latest-version');
+			}
 			break;
 		case 'clipboard':
 			a.href = 'javascript:onclick=toClipBoard("' + href + '");';
@@ -188,6 +196,10 @@ function getVersions() {
 	});
 };
 
+// バージョン番号の頭に v がついているかどうかに関わらず、
+// x.y.z 形式のバージョン番号を返す
+// param [String] original 調べるバージョン番号
+// return [String]
 function extractVersionNumber(original) {
 	var matching = original.match(/^v?(\d+)\.(\d+)\.(\d+)/);
 	return matching[1] + '.' + matching[2] + '.' + matching[3];
@@ -229,49 +241,59 @@ function getAdminInformations(base_url, admin_elements) {
 	request.send();
 };
 
-function getLatestRelease(target_element) {
-	var url = '';
-	var type = '';
-	switch(target_element.classList[0]) {
-		case 'api-version':
-			url = 'ysakasin/bcdice-api';
-			type = 'api';
-			break;
-		case 'lib-version':
-			url = 'bcdice/BCDice';
-			type = 'bcdice';
-			break;
-		default:
-			return;
-			break;
-	}
-	url = 'https://api.github.com/repos/' + url + '/releases/latest';
+// 最新バージョンを取得する
+// return [void]
+function getLatestRelease() {
+	stat.textContent = 'GitHub より最新リリース情報をダウンロード中';
 
-	var request = new XMLHttpRequest();
-	request.open('GET', url)
-	request.responseType = 'json';
-	request.timeout = 5000;
+	// GitHub より、最新リリースを取得する
+	var latest_table = document.getElementById('latest-release');
+	Array.prototype.forEach.call(latest_table.getElementsByClassName('target'), function(target_element) {
+		var url = '';
+		var type = '';
 
-	request.onload = function() {
-		if(this.status != 200) {
-			this.onerror();
-			return;
+		switch(target_element.classList[0]) {
+			case 'api-version':
+				url = 'bcdice/bcdice-api';
+				type = 'api';
+				break;
+			case 'lib-version':
+				url = 'bcdice/BCDice';
+				type = 'bcdice';
+				break;
+			default:
+				return;
+				break;
 		}
+		url = 'https://api.github.com/repos/' + url + '/releases/latest';
 
-		var data = this.response;
-		target_element.appendChild(getA(data['tag_name'], type, extractVersionNumber(data['tag_name'])));
+		var request = new XMLHttpRequest();
+		request.open('GET', url)
+		request.responseType = 'json';
+		request.timeout = 5000;
 
-		var css = document.styleSheets.item(1);
-		css.insertRule('.' + type + '-' + data['tag_name'].replace(/\./g, '-') + ' { font-weight: bold; }', document.styleSheets[1].cssRules.length);
-	}
-	request.onerror = function() {
-		target_element.textContent = 'Error';
-	};
-	request.ontimeout = function() {
-		target_element.textContent = 'Timeout';
-	};
+		request.onload = function() {
+			if(this.status != 200) {
+				this.onerror();
+				return;
+			}
 
-	request.send();
+			var data = this.response;
+			latestVersions[type] = extractVersionNumber(data['tag_name']);
+			target_element.appendChild(getA(data['tag_name'], type, latestVersions[type]));
+			target_element.classList.add('latest-version');
+		}
+		request.onerror = function() {
+			latestVersions[type] = 'Error';
+			target_element.textContent = 'Error';
+		};
+		request.ontimeout = function() {
+			latestVersions[type] = 'Timeout';
+			target_element.textContent = 'Timeout';
+		};
+
+		request.send();
+	});
 };
 
 function createFontAwesomeIcon(style, prefix = 'far ') {
