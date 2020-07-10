@@ -62,7 +62,7 @@ function getStatuses(serverList) {
 	});
 }
 
-function getA(href, type = null, content = null) {
+function getA(href, type, content) {
 	var a = document.createElement('a');
 	a.innerHTML = content ? content : href;
 	switch(type) {
@@ -108,7 +108,7 @@ function toClipBoard(text) {
 }
 
 function outputList(servers) {
-	for (const server of servers) {
+	servers.forEach(function (server) {
 		var tdServerName = document.createElement('td');
 		tdServerName.classList.add('server-name');
 		tdServerName.textContent = server;
@@ -136,7 +136,7 @@ function outputList(servers) {
 
 		var table = document.getElementById('versions');
 		table.appendChild(tr);
-	}
+	});
 }
 
 function getVersions() {
@@ -275,8 +275,9 @@ function getLatestRelease() {
 	return Promise.all(promises);
 }
 
-function createFontAwesomeIcon(style, prefix = 'far ') {
+function createFontAwesomeIcon(style, prefix) {
+	if (!prefix) prefix = "far ";
 	var icon = document.createElement('i');
 	icon.className = prefix + style;
 	return icon;
-};
+}
