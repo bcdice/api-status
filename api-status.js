@@ -21,48 +21,45 @@ window.onload = function () {
 	// JS 非対応コメントを削除
 	stat.textContent = '';
 
-	getLatestRelease();
-
-	var timer = setInterval(function() {
-		if(latestVersions['api'] != '' && latestVersions['bcdice'] != '') {
-			clearInterval(timer);
+	getLatestRelease()
+		.then(function () {
 			getServerList();
-		}
-	}, 10);
-}
+		})
+		.catch(function (error) {
+			console.error(error);
+		});
+};
 
 function getServerList() {
 	// サーバリストをダウンロード
 	stat.textContent = 'サーバリストをダウンロード中';
-	var request = new XMLHttpRequest();
-	request.open('GET', 'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml');
-	request.responseType = 'text';
-	request.timeout = 1000;
-
-	request.onload = function () {
-		if(this.status != 200) {
-			this.onerror();
-			return;
-		}
-		stat.textContent = 'サーバリストをもとに稼働中のバージョンを取得中';
-		getStatuses(jsyaml.load(this.response));
-	};
-	request.onerror = function () {
-		stat.textContent = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
-		header = document.getElementById('header');
-		header.textContent = '';
-		getStatuses(staticServerList);
-	}
-	request.ontimeout = request.onerror;
-
-	request.send();
+	fetch(
+		'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml'
+	)
+		.then(function (response) {
+			if (!response.ok) {
+				throw new Error("status code: " + response.status);
+			}
+			return response.text();
+		})
+		.then(function (text) {
+			getStatuses(jsyaml.load(text));
+		})
+		.catch(function (error) {
+			console.error(error);
+			stat.textContent = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
+			header = document.getElementById('header');
+			header.textContent = '';
+			getStatuses(staticServerList);
+		});
 }
 
 function getStatuses(serverList) {
 	// 各サーバの API を叩いてデータを取得・表示
 	outputList(serverList);
-	getVersions();
-	stat.textContent = '完了';
+	getVersions().then(function () {
+		stat.textContent = '完了';
+	});
 }
 
 function getA(href, type = null, content = null) {
@@ -144,7 +141,7 @@ function outputList(servers) {
 
 function getVersions() {
 	var table = document.getElementById('versions');
-	Array.prototype.forEach.call(table.getElementsByTagName('tr'), function(server) {
+	const promises = Array.prototype.map.call(table.getElementsByTagName('tr'), function (server) {
 		var name = server.querySelector('.server-name');
 		var api = server.querySelector('.api-version');
 		var lib = server.querySelector('.lib-version');
@@ -154,47 +151,41 @@ function getVersions() {
 		var admin_email = server.querySelector('.admin-email');
 		var base_url = name.innerHTML;
 
-		var request = new XMLHttpRequest();
-		request.open('GET', base_url + '/v1/version');
-		request.responseType = 'json';
-		request.timeout = 5000;
-
-		request.onload = function () {
-			if(this.status != 200) {
-				this.onerror();
-				return;
-			}
-
-			var data = this.response;
-			name.innerHTML = '';
-			name.appendChild(getA(base_url, 'clipboard'));
-			api.appendChild(getA(data['api'], 'api'));
-			lib.appendChild(getA(data['bcdice'], 'bcdice'));
-			getAdminInformations(
-				base_url,
-				{
-					name: admin_name,
-					url: admin_url,
-					email: admin_email
-				}
-			);
-
-			const endTime = performance.now();
-			time.innerHTML = Math.round(endTime - startTime) + 'ms';
-		};
-		request.onerror = function () {
-			api.innerHTML = 'Error';
-			lib.innerHTML = 'Error';
-		};
-		request.ontimeout = function () {
-			api.innerHTML = 'Timeout';
-			lib.innerHTML = 'Timeout';
-		}
-
 		const startTime = performance.now();
-		request.send();
-	});
-};
+
+		return fetch(base_url + '/v1/version')
+			.then(function (response) {
+				if (!response.ok) {
+					throw new Error("status code: " + response.status);
+				}
+				return response.json();
+			})
+			.then(function (data) {
+				name.innerHTML = '';
+				name.appendChild(getA(base_url, 'clipboard'));
+				api.appendChild(getA(data['api'], 'api'));
+				lib.appendChild(getA(data['bcdice'], 'bcdice'));
+				getAdminInformations(
+					base_url,
+					{
+						name: admin_name,
+						url: admin_url,
+						email: admin_email
+					}
+				);
+
+				const endTime = performance.now();
+				time.innerHTML = Math.round(endTime - startTime) + 'ms';
+			})
+			.catch(function (error) {
+				console.error(error);
+				api.innerHTML = 'Error';
+				lib.innerHTML = 'Error';
+			});
+		}
+	);
+	return Promise.all(promises);
+}
 
 // バージョン番号の頭に v がついているかどうかに関わらず、
 // x.y.z 形式のバージョン番号を返す
@@ -206,40 +197,36 @@ function extractVersionNumber(original) {
 };
 
 function getAdminInformations(base_url, admin_elements) {
-	var request = new XMLHttpRequest();
-	request.open('GET', base_url + '/v1/admin');
-	request.responseType = 'json';
-	request.timeout = 10000;
+	fetch(base_url + '/v1/admin')
+		.then(function (response) {
+			if (!response.ok) {
+				throw new Error("status code: " + response.status);
+			}
+			return response.json();
+		})
+		.then(function (data) {
+			if (data['name'] != null) {
+				var name = document.createElement('span');
+				name.textContent = data['name'];
+				admin_elements.name.appendChild(name);
+			}
 
-	request.onload = function() {
-		var data = this.response;
+			if (data['url'] != null) {
+				var icon = createFontAwesomeIcon('fa-file');
+				var a = getA(data['url'], 'admin-url', icon.outerHTML);
+				a.target = '_blank';
+				admin_elements.url.appendChild(a);
+			}
 
-		if(data['name'] != null) {
-			var name = document.createElement('span');
-			name.textContent = data['name'];
-			admin_elements.name.appendChild(name);
-		}
-
-		if(data['url'] != null){
-			var icon = createFontAwesomeIcon('fa-file');
-			var a = getA(data['url'], 'admin-url', icon.outerHTML);
-			a.target = '_blank';
-			admin_elements.url.appendChild(a);
-		}
-
-		if(data['email'] != null) {
-			var mail = createFontAwesomeIcon('fa-envelope');
-			admin_elements.email.appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
-		}
-	};
-	request.onerror = function() {
-		admin_elements.name.textContent = 'Error';
-	};
-	request.ontimeout = function() {
-		admin_elements.name.textContent = 'Timeout';
-	};
-	request.send();
-};
+			if (data['email'] != null) {
+				var mail = createFontAwesomeIcon('fa-envelope');
+				admin_elements.email.appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
+			}
+		})
+		.catch(function (error) {
+			console.error(error);
+		});
+}
 
 // 最新バージョンを取得する
 // return [void]
@@ -247,12 +234,12 @@ function getLatestRelease() {
 	stat.textContent = 'GitHub より最新リリース情報をダウンロード中';
 
 	// GitHub より、最新リリースを取得する
-	var latest_table = document.getElementById('latest-release');
-	Array.prototype.forEach.call(latest_table.getElementsByClassName('target'), function(target_element) {
+	var latest_table = document.getElementById("latest-release");
+	const promises = Array.prototype.map.call(latest_table.getElementsByClassName("target"), function (target_element) {
 		var url = '';
 		var type = '';
 
-		switch(target_element.classList[0]) {
+		switch (target_element.classList[0]) {
 			case 'api-version':
 				url = 'bcdice/bcdice-api';
 				type = 'api';
@@ -263,38 +250,30 @@ function getLatestRelease() {
 				break;
 			default:
 				return;
-				break;
 		}
 		url = 'https://api.github.com/repos/' + url + '/releases/latest';
 
-		var request = new XMLHttpRequest();
-		request.open('GET', url)
-		request.responseType = 'json';
-		request.timeout = 5000;
-
-		request.onload = function() {
-			if(this.status != 200) {
-				this.onerror();
-				return;
-			}
-
-			var data = this.response;
-			latestVersions[type] = extractVersionNumber(data['tag_name']);
-			target_element.appendChild(getA(data['tag_name'], type, latestVersions[type]));
-			target_element.classList.add('latest-version');
+		return fetch(url)
+			.then(function (response) {
+				if (!response.ok) {
+					throw new Error("status code: " + response.status);
+				}
+				return response.json();
+			})
+			.then(function (data) {
+				latestVersions[type] = extractVersionNumber(data['tag_name']);
+				target_element.appendChild(getA(data['tag_name'], type, latestVersions[type]));
+				target_element.classList.add('latest-version');
+			})
+			.catch(function (error) {
+				console.error(error);
+				latestVersions[type] = 'Error';
+				target_element.textContent = 'Error';
+			});
 		}
-		request.onerror = function() {
-			latestVersions[type] = 'Error';
-			target_element.textContent = 'Error';
-		};
-		request.ontimeout = function() {
-			latestVersions[type] = 'Timeout';
-			target_element.textContent = 'Timeout';
-		};
-
-		request.send();
-	});
-};
+	);
+	return Promise.all(promises);
+}
 
 function createFontAwesomeIcon(style, prefix = 'far ') {
 	var icon = document.createElement('i');
