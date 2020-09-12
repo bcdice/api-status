@@ -229,20 +229,20 @@ async function getAdminInformations(base_url, admin_elements) {
 			throw new Error("status code: " + response.status);
 		}
 		const data = await response.json();
-		if (data['name'] != null) {
+		if (data['name']) {
 			var name = document.createElement('span');
 			name.textContent = data['name'];
 			admin_elements.name.appendChild(name);
 		}
 
-		if (data['url'] != null) {
+		if (data['url']) {
 			var icon = createFontAwesomeIcon('fa-file');
 			var a = getA(data['url'], 'admin-url', icon.outerHTML);
 			a.target = '_blank';
 			admin_elements.url.appendChild(a);
 		}
 
-		if (data['email'] != null) {
+		if (data['email']) {
 			var mail = createFontAwesomeIcon('fa-envelope');
 			admin_elements.email.appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
 		}
