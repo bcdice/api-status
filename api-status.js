@@ -3,12 +3,13 @@ const stat = document.getElementById('status');
 
 // 動的にサーバリストをダウンロードできなかった場合に使うリスト
 const staticServerList = [
-	'https://bcdice.kazagakure.net',
-	'https://bcdice.herokuapp.com',
-	'https://www.taruki.com/bcdice-api',
-	'https://bcdice-api.conos.jp',
 	'https://bcdice.onlinesession.app',
+	'https://bcdice-api.conos.jp',
+	'https://bcdice.kazagakure.net',
+	'https://bcdice.aimsot.net',
+	'https://bcdice-api.raa0121.info',
 	'https://bcdice.trpg.net',
+	'https://bcdice.kiridaruma.net',
 ];
 
 var latestVersions = {
