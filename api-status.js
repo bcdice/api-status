@@ -38,8 +38,12 @@ async function getServerList() {
 	stat.textContent = 'サーバリストをダウンロード中';
 
 	try {
+		const controller = new AbortController();
+		const signal = controller.signal;
+		setTimeout(() => controller.abort(), 1000);
 		const response = await fetch(
-			'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml'
+			'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml',
+			{ signal }
 		);
 		if (!response.ok) {
 			throw new Error("status code: " + response.status);
@@ -161,7 +165,12 @@ function getVersions() {
 		const startTime = performance.now();
 
 		try {
-			const response = await fetch(base_url + '/v1/version');
+			const controller = new AbortController();
+			const signal = controller.signal;
+			setTimeout(() => controller.abort(), 5000);
+			const response = await fetch(base_url + '/v1/version', {
+				signal,
+			});
 			if (!response.ok) {
 				throw new Error("status code: " + response.status);
 			}
@@ -183,8 +192,13 @@ function getVersions() {
 			time.innerHTML = Math.round(endTime - startTime) + 'ms';
 		} catch (error) {
 			console.error(error);
-			api.innerHTML = 'Error';
-			lib.innerHTML = 'Error';
+			if (error.name === 'AbortError') {
+				api.innerHTML = 'Timeout';
+				lib.innerHTML = 'Timeout';
+			} else {
+				api.innerHTML = 'Error';
+				lib.innerHTML = 'Error';
+			}
 		}
 	});
 	return Promise.all(promises);
@@ -207,7 +221,10 @@ function extractVersionNumber(original) {
  */
 async function getAdminInformations(base_url, admin_elements) {
 	try {
-		const response = await fetch(base_url + '/v1/admin');
+		const controller = new AbortController();
+		const signal = controller.signal;
+		setTimeout(() => controller.abort(), 10000);
+		const response = await fetch(base_url + '/v1/admin', { signal });
 		if (!response.ok) {
 			throw new Error("status code: " + response.status);
 		}
@@ -231,7 +248,11 @@ async function getAdminInformations(base_url, admin_elements) {
 		}
 	} catch (error) {
 		console.error(error);
-		admin_elements.name.textContent = 'Error';
+		if (error.name === 'AbortError') {
+			admin_elements.name.textContent = 'Timeout';
+		} else {
+			admin_elements.name.textContent = 'Error';
+		}
 	}
 }
 
@@ -263,7 +284,10 @@ function getLatestRelease() {
 		url = 'https://api.github.com/repos/' + url + '/releases/latest';
 
 		try {
-			const response = await fetch(url);
+			const controller = new AbortController();
+			const signal = controller.signal;
+			setTimeout(() => controller.abort(), 5000);
+			const response = await fetch(url, { signal });
 			if (!response.ok) {
 				throw new Error("status code: " + response.status);
 			}
@@ -273,8 +297,13 @@ function getLatestRelease() {
 			target_element.classList.add('latest-version');
 		} catch (error) {
 			console.error(error);
-			latestVersions[type] = 'Error';
-			target_element.textContent = 'Error';
+			if (error.name === 'AbortError') {
+				latestVersions[type] = 'Timeout';
+				target_element.textContent = 'Timeout';
+			} else {
+				latestVersions[type] = 'Error';
+				target_element.textContent = 'Error';
+			}
 		}
 	});
 	return Promise.all(promises);
