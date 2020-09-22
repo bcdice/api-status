@@ -3,12 +3,13 @@ const stat = document.getElementById('status');
 
 // 動的にサーバリストをダウンロードできなかった場合に使うリスト
 const staticServerList = [
-	'https://bcdice.kazagakure.net',
-	'https://bcdice.herokuapp.com',
-	'https://www.taruki.com/bcdice-api',
-	'https://bcdice-api.conos.jp',
 	'https://bcdice.onlinesession.app',
+	'https://bcdice-api.conos.jp',
+	'https://bcdice.kazagakure.net',
+	'https://bcdice.aimsot.net',
+	'https://bcdice-api.raa0121.info',
 	'https://bcdice.trpg.net',
+	'https://bcdice.kiridaruma.net',
 ];
 
 var latestVersions = {
@@ -21,47 +22,52 @@ window.onload = function () {
 	// JS 非対応コメントを削除
 	stat.textContent = '';
 
-	getLatestRelease();
+	getLatestRelease()
+		.then(function () {
+			return getServerList();
+		})
+		.catch(function (error) {
+			console.error(error);
+		});
+};
 
-	var timer = setInterval(function() {
-		if(latestVersions['api'] != '' && latestVersions['bcdice'] != '') {
-			clearInterval(timer);
-			getServerList();
-		}
-	}, 10);
-}
-
-function getServerList() {
-	// サーバリストをダウンロード
+/**
+ * サーバリストをダウンロード
+ * @returns {Promise<void>}
+ */
+async function getServerList() {
 	stat.textContent = 'サーバリストをダウンロード中';
-	var request = new XMLHttpRequest();
-	request.open('GET', 'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml');
-	request.responseType = 'text';
-	request.timeout = 1000;
 
-	request.onload = function () {
-		if(this.status != 200) {
-			this.onerror();
-			return;
+	try {
+		const controller = new AbortController();
+		const signal = controller.signal;
+		setTimeout(() => controller.abort(), 1000);
+		const response = await fetch(
+			'https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml',
+			{ signal }
+		);
+		if (!response.ok) {
+			throw new Error("status code: " + response.status);
 		}
-		stat.textContent = 'サーバリストをもとに稼働中のバージョンを取得中';
-		getStatuses(jsyaml.load(this.response));
-	};
-	request.onerror = function () {
+		const text = await response.text();
+		return getStatuses(jsyaml.load(text));
+	} catch (error) {
+		console.error(error);
 		stat.textContent = 'サーバリストのダウンロードに失敗、固定のリストをもとに稼働中のバージョンを取得中';
-		header = document.getElementById('header');
+		const header = document.getElementById('header');
 		header.textContent = '';
-		getStatuses(staticServerList);
+		return getStatuses(staticServerList);
 	}
-	request.ontimeout = request.onerror;
-
-	request.send();
 }
 
-function getStatuses(serverList) {
+/**
+ * @param {string[]} serverList
+ * @returns {Promise<void>}
+ */
+async function getStatuses(serverList) {
 	// 各サーバの API を叩いてデータを取得・表示
 	outputList(serverList);
-	getVersions();
+	await getVersions();
 	stat.textContent = '完了';
 }
 
@@ -142,9 +148,12 @@ function outputList(servers) {
 	}
 }
 
+/**
+ * @returns {Promise<void[]>}
+ */
 function getVersions() {
 	var table = document.getElementById('versions');
-	Array.prototype.forEach.call(table.getElementsByTagName('tr'), function(server) {
+	const promises = Array.from(table.getElementsByTagName('tr')).map(async function (server) {
 		var name = server.querySelector('.server-name');
 		var api = server.querySelector('.api-version');
 		var lib = server.querySelector('.lib-version');
@@ -154,18 +163,19 @@ function getVersions() {
 		var admin_email = server.querySelector('.admin-email');
 		var base_url = name.innerHTML;
 
-		var request = new XMLHttpRequest();
-		request.open('GET', base_url + '/v1/version');
-		request.responseType = 'json';
-		request.timeout = 5000;
+		const startTime = performance.now();
 
-		request.onload = function () {
-			if(this.status != 200) {
-				this.onerror();
-				return;
+		try {
+			const controller = new AbortController();
+			const signal = controller.signal;
+			setTimeout(() => controller.abort(), 5000);
+			const response = await fetch(base_url + '/v1/version', {
+				signal,
+			});
+			if (!response.ok) {
+				throw new Error("status code: " + response.status);
 			}
-
-			var data = this.response;
+			const data = await response.json();
 			name.innerHTML = '';
 			name.appendChild(getA(base_url, 'clipboard'));
 			api.appendChild(getA(data['api'], 'api'));
@@ -181,20 +191,19 @@ function getVersions() {
 
 			const endTime = performance.now();
 			time.innerHTML = Math.round(endTime - startTime) + 'ms';
-		};
-		request.onerror = function () {
-			api.innerHTML = 'Error';
-			lib.innerHTML = 'Error';
-		};
-		request.ontimeout = function () {
-			api.innerHTML = 'Timeout';
-			lib.innerHTML = 'Timeout';
+		} catch (error) {
+			console.error(error);
+			if (error.name === 'AbortError') {
+				api.innerHTML = 'Timeout';
+				lib.innerHTML = 'Timeout';
+			} else {
+				api.innerHTML = 'Error';
+				lib.innerHTML = 'Error';
+			}
 		}
-
-		const startTime = performance.now();
-		request.send();
 	});
-};
+	return Promise.all(promises);
+}
 
 // バージョン番号の頭に v がついているかどうかに関わらず、
 // x.y.z 形式のバージョン番号を返す
@@ -205,54 +214,63 @@ function extractVersionNumber(original) {
 	return matching[1] + '.' + matching[2] + '.' + matching[3];
 };
 
-function getAdminInformations(base_url, admin_elements) {
-	var request = new XMLHttpRequest();
-	request.open('GET', base_url + '/v1/admin');
-	request.responseType = 'json';
-	request.timeout = 10000;
-
-	request.onload = function() {
-		var data = this.response;
-
-		if(data['name'] != null) {
+/**
+ * 管理者情報を取得する
+ * @param {string} base_url
+ * @param admin_elements
+ * @returns {Promise<void>}
+ */
+async function getAdminInformations(base_url, admin_elements) {
+	try {
+		const controller = new AbortController();
+		const signal = controller.signal;
+		setTimeout(() => controller.abort(), 10000);
+		const response = await fetch(base_url + '/v1/admin', { signal });
+		if (!response.ok) {
+			throw new Error("status code: " + response.status);
+		}
+		const data = await response.json();
+		if (data['name']) {
 			var name = document.createElement('span');
 			name.textContent = data['name'];
 			admin_elements.name.appendChild(name);
 		}
 
-		if(data['url'] != null){
+		if (data['url']) {
 			var icon = createFontAwesomeIcon('fa-file');
 			var a = getA(data['url'], 'admin-url', icon.outerHTML);
 			a.target = '_blank';
 			admin_elements.url.appendChild(a);
 		}
 
-		if(data['email'] != null) {
+		if (data['email']) {
 			var mail = createFontAwesomeIcon('fa-envelope');
 			admin_elements.email.appendChild(getA(data['email'], 'admin-email', mail.outerHTML));
 		}
-	};
-	request.onerror = function() {
-		admin_elements.name.textContent = 'Error';
-	};
-	request.ontimeout = function() {
-		admin_elements.name.textContent = 'Timeout';
-	};
-	request.send();
-};
+	} catch (error) {
+		console.error(error);
+		if (error.name === 'AbortError') {
+			admin_elements.name.textContent = 'Timeout';
+		} else {
+			admin_elements.name.textContent = 'Error';
+		}
+	}
+}
 
-// 最新バージョンを取得する
-// return [void]
+/**
+ * 最新バージョンを取得する
+ * @returns {Promise<void[]>}
+ */
 function getLatestRelease() {
 	stat.textContent = 'GitHub より最新リリース情報をダウンロード中';
 
 	// GitHub より、最新リリースを取得する
 	var latest_table = document.getElementById('latest-release');
-	Array.prototype.forEach.call(latest_table.getElementsByClassName('target'), function(target_element) {
+	const promises = Array.from(latest_table.getElementsByClassName('target')).map(async function (target_element) {
 		var url = '';
 		var type = '';
 
-		switch(target_element.classList[0]) {
+		switch (target_element.classList[0]) {
 			case 'api-version':
 				url = 'bcdice/bcdice-api';
 				type = 'api';
@@ -263,38 +281,34 @@ function getLatestRelease() {
 				break;
 			default:
 				return;
-				break;
 		}
 		url = 'https://api.github.com/repos/' + url + '/releases/latest';
 
-		var request = new XMLHttpRequest();
-		request.open('GET', url)
-		request.responseType = 'json';
-		request.timeout = 5000;
-
-		request.onload = function() {
-			if(this.status != 200) {
-				this.onerror();
-				return;
+		try {
+			const controller = new AbortController();
+			const signal = controller.signal;
+			setTimeout(() => controller.abort(), 5000);
+			const response = await fetch(url, { signal });
+			if (!response.ok) {
+				throw new Error("status code: " + response.status);
 			}
-
-			var data = this.response;
+			const data = await response.json();
 			latestVersions[type] = extractVersionNumber(data['tag_name']);
 			target_element.appendChild(getA(data['tag_name'], type, latestVersions[type]));
 			target_element.classList.add('latest-version');
+		} catch (error) {
+			console.error(error);
+			if (error.name === 'AbortError') {
+				latestVersions[type] = 'Timeout';
+				target_element.textContent = 'Timeout';
+			} else {
+				latestVersions[type] = 'Error';
+				target_element.textContent = 'Error';
+			}
 		}
-		request.onerror = function() {
-			latestVersions[type] = 'Error';
-			target_element.textContent = 'Error';
-		};
-		request.ontimeout = function() {
-			latestVersions[type] = 'Timeout';
-			target_element.textContent = 'Timeout';
-		};
-
-		request.send();
 	});
-};
+	return Promise.all(promises);
+}
 
 function createFontAwesomeIcon(style, prefix = 'far ') {
 	var icon = document.createElement('i');
