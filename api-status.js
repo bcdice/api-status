@@ -169,7 +169,7 @@ function getVersions() {
 			const controller = new AbortController();
 			const signal = controller.signal;
 			setTimeout(() => controller.abort(), 5000);
-			const response = await fetch(base_url + '/v1/version', {
+			const response = await fetch(base_url + '/v2/version', {
 				signal,
 			});
 			if (!response.ok) {
@@ -225,7 +225,7 @@ async function getAdminInformations(base_url, admin_elements) {
 		const controller = new AbortController();
 		const signal = controller.signal;
 		setTimeout(() => controller.abort(), 10000);
-		const response = await fetch(base_url + '/v1/admin', { signal });
+		const response = await fetch(base_url + '/v2/admin', { signal });
 		if (!response.ok) {
 			throw new Error("status code: " + response.status);
 		}
